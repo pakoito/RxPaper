@@ -20,14 +20,14 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.pacoworks.rxpaper;
+package com.pacoworks.rxpaper2;
 
 import android.support.test.rule.ActivityTestRule;
 import android.support.test.runner.AndroidJUnit4;
 
-import com.pacoworks.rxpaper.sample.MainActivity;
-import com.pacoworks.rxpaper.sample.model.ComplexObject;
-import com.pacoworks.rxpaper.sample.model.ImmutableObject;
+import com.pacoworks.rxpaper2.sample.MainActivity;
+import com.pacoworks.rxpaper2.sample.model.ComplexObject;
+import com.pacoworks.rxpaper2.sample.model.ImmutableObject;
 
 import org.junit.Assert;
 import org.junit.Before;

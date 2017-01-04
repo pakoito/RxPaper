@@ -20,11 +20,11 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.pacoworks.rxpaper.sample;
+package com.pacoworks.rxpaper2.sample;
 
 import android.app.Application;
 
-import com.pacoworks.rxpaper.RxPaperBook;
+import com.pacoworks.rxpaper2.RxPaperBook;
 
 public class RxPaperSampleApplication extends Application {
     @Override

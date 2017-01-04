@@ -20,7 +20,7 @@
   -->
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.pacoworks.rxpaper">
+    package="com.pacoworks.rxpaper2">
 
     <application
         android:allowBackup="true"
