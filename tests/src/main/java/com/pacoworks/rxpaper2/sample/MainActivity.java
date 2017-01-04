@@ -20,36 +20,14 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.pacoworks.rxpaper.sample.model;
+package com.pacoworks.rxpaper2.sample;
 
-public class ImmutableObject {
-    private final String value;
+import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 
-    public ImmutableObject(String value) {
-        this.value = value;
-    }
-
-    public String getValue() {
-        return value;
-    }
-
+public class MainActivity extends AppCompatActivity {
     @Override
-    public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
-        ImmutableObject that = (ImmutableObject)o;
-        return value != null ? value.equals(that.value) : that.value == null;
-    }
-
-    @Override
-    public int hashCode() {
-        return value != null ? value.hashCode() : 0;
-    }
-
-    @Override
-    public String toString() {
-        return "ImmutableObject{" + "value='" + value + '\'' + '}';
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
     }
 }

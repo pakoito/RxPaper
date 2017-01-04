@@ -20,7 +20,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.pacoworks.rxpaper.sample.model;
+package com.pacoworks.rxpaper2.sample.model;
 
 import java.math.BigInteger;
 import java.security.SecureRandom;

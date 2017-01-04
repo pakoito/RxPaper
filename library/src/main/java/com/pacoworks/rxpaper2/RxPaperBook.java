@@ -19,42 +19,42 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.pacoworks.rxpaper;
-
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import rx.Completable;
-import rx.Observable;
-import rx.Scheduler;
-import rx.Single;
-import rx.functions.Action0;
-import rx.functions.Func0;
-import rx.functions.Func1;
-import rx.schedulers.Schedulers;
-import rx.subjects.PublishSubject;
-import rx.subjects.SerializedSubject;
+package com.pacoworks.rxpaper2;
 
 import android.content.Context;
 import android.util.Pair;
 
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import io.paperdb.Book;
 import io.paperdb.Paper;
+import io.reactivex.Completable;
+import io.reactivex.Observable;
+import io.reactivex.Scheduler;
+import io.reactivex.Single;
+import io.reactivex.functions.Action;
+import io.reactivex.functions.Function;
+import io.reactivex.functions.Predicate;
+import io.reactivex.schedulers.Schedulers;
+import io.reactivex.subjects.PublishSubject;
+import io.reactivex.subjects.Subject;
 
 /**
  * Adapter class with a new interface to perform PaperDB operations.
- * 
+ *
  * @author pakoito
  */
 public class RxPaperBook {
+
     private static final AtomicBoolean INITIALIZED = new AtomicBoolean();
 
     final Book book;
 
     final Scheduler scheduler;
 
-    final SerializedSubject<Pair<String, ?>, Pair<String, ?>> updates = new SerializedSubject<>(
-            PublishSubject.<Pair<String, ?>> create());
+    final private Subject<Pair<String, ?>> updates = PublishSubject.<Pair<String, ?>>create().toSerialized();
 
     private RxPaperBook(Scheduler scheduler) {
         this.scheduler = scheduler;
@@ -70,7 +70,7 @@ public class RxPaperBook {
      * Initializes the underlying {@link Paper} database.
      * <p/>
      * This operation is required only once, but can be called multiple times safely.
-     * 
+     *
      * @param context application context
      */
     public static void init(Context context) {
@@ -90,7 +90,7 @@ public class RxPaperBook {
      * Open the main {@link Book} running its operations on {@link Schedulers#io()}.
      * <p/>
      * Requires calling {@link RxPaperBook#init(Context)} at least once beforehand.
-     * 
+     *
      * @return new RxPaperBook
      */
     public static RxPaperBook with() {
@@ -102,7 +102,7 @@ public class RxPaperBook {
      * Open a custom {@link Book} running its operations on {@link Schedulers#io()}.
      * <p/>
      * Requires calling {@link RxPaperBook#init(Context)} at least once beforehand.
-     * 
+     *
      * @param customBook book name
      * @return new RxPaperBook
      */
@@ -115,7 +115,7 @@ public class RxPaperBook {
      * Open the main {@link Book} running its operations on a provided scheduler.
      * <p/>
      * Requires calling {@link RxPaperBook#init(Context)} at least once beforehand.
-     * 
+     *
      * @param scheduler scheduler where operations will be run
      * @return new RxPaperBook
      */
@@ -128,9 +128,9 @@ public class RxPaperBook {
      * Open a custom {@link Book} running its operations on a provided scheduler.
      * <p/>
      * Requires calling {@link RxPaperBook#init(Context)} at least once beforehand.
-     * 
+     *
      * @param customBook book name
-     * @param scheduler scheduler where operations will be run
+     * @param scheduler  scheduler where operations will be run
      * @return new RxPaperBook
      */
     public static RxPaperBook with(String customBook, Scheduler scheduler) {
@@ -144,14 +144,14 @@ public class RxPaperBook {
      * To deserialize correctly it is recommended to have an all-args constructor, but other types
      * may be available.
      *
-     * @param key object key is used as part of object's file name
+     * @param key   object key is used as part of object's file name
      * @param value object to save, must have no-arg constructor, can't be null.
      * @return this Book instance
      */
     public <T> Completable write(final String key, final T value) {
-        return Completable.fromAction(new Action0() {
+        return Completable.fromAction(new Action() {
             @Override
-            public void call() {
+            public void run() throws Exception {
                 book.write(key, value);
                 updates.onNext(Pair.create(key, value));
             }
@@ -163,14 +163,14 @@ public class RxPaperBook {
      * backward and forward compatibility: removed fields are ignored, new fields have their default
      * values.
      *
-     * @param key object key to read
+     * @param key          object key to read
      * @param defaultValue value to be returned if key doesn't exist
      * @return the saved object instance or defaultValue
      */
     public <T> Single<T> read(final String key, final T defaultValue) {
-        return Single.fromCallable(new Func0<T>() {
+        return Single.fromCallable(new Callable<T>() {
             @Override
-            public T call() {
+            public T call() throws Exception {
                 return book.read(key, defaultValue);
             }
         }).subscribeOn(scheduler);
@@ -185,7 +185,7 @@ public class RxPaperBook {
      * @return the saved object instance
      */
     public <T> Single<T> read(final String key) {
-        return Single.fromCallable(new Func0<T>() {
+        return Single.fromCallable(new Callable<T>() {
             @Override
             public T call() {
                 final T read = book.read(key);
@@ -201,9 +201,9 @@ public class RxPaperBook {
      * Delete saved object for given key if it is exist.
      */
     public Completable delete(final String key) {
-        return Completable.fromAction(new Action0() {
+        return Completable.fromAction(new Action() {
             @Override
-            public void call() {
+            public void run() {
                 book.delete(key);
             }
         }).subscribeOn(scheduler);
@@ -216,7 +216,7 @@ public class RxPaperBook {
      * @return true if object with given key exists in Book storage, false otherwise
      */
     public Single<Boolean> exists(final String key) {
-        return Single.fromCallable(new Func0<Boolean>() {
+        return Single.fromCallable(new Callable<Boolean>() {
             @Override
             public Boolean call() {
                 return book.exist(key);
@@ -230,7 +230,7 @@ public class RxPaperBook {
      * @return all keys
      */
     public Single<List<String>> keys() {
-        return Single.fromCallable(new Func0<List<String>>() {
+        return Single.fromCallable(new Callable<List<String>>() {
             @Override
             public List<String> call() {
                 return book.getAllKeys();
@@ -242,9 +242,9 @@ public class RxPaperBook {
      * Destroys all data saved in {@link Book}.
      */
     public Completable destroy() {
-        return Completable.fromAction(new Action0() {
+        return Completable.fromAction(new Action() {
             @Override
-            public void call() {
+            public void run() throws Exception {
                 book.destroy();
             }
         }).subscribeOn(scheduler);
@@ -257,14 +257,14 @@ public class RxPaperBook {
      * @return hot observable
      */
     public <T> Observable<T> observe(final String key, final Class<T> clazz) {
-        return updates.asObservable().filter(new Func1<Pair<String, ?>, Boolean>() {
+        return updates.filter(new Predicate<Pair<String, ?>>() {
             @Override
-            public Boolean call(Pair<String, ?> stringPair) {
+            public boolean test(Pair<String, ?> stringPair) throws Exception {
                 return stringPair.first.equals(key);
             }
-        }).map(new Func1<Pair<String, ?>, Object>() {
+        }).map(new Function<Pair<String, ?>, Object>() {
             @Override
-            public Object call(Pair<String, ?> stringPair) {
+            public Object apply(Pair<String, ?> stringPair) throws Exception {
                 return stringPair.second;
             }
         }).ofType(clazz);
@@ -282,15 +282,15 @@ public class RxPaperBook {
      */
     @SuppressWarnings("unchecked")
     public <T> Observable<T> observeUnsafe(final String key) {
-        return updates.asObservable().filter(new Func1<Pair<String, ?>, Boolean>() {
+        return updates.filter(new Predicate<Pair<String, ?>>() {
             @Override
-            public Boolean call(Pair<String, ?> stringPair) {
+            public boolean test(Pair<String, ?> stringPair) throws Exception {
                 return stringPair.first.equals(key);
             }
-        }).map(new Func1<Pair<String, ?>, T>() {
+        }).map(new Function<Pair<String, ?>, T>() {
             @Override
-            public T call(Pair<String, ?> stringPair) {
-                return (T)stringPair.second;
+            public T apply(Pair<String, ?> stringPair) throws Exception {
+                return (T) stringPair.second;
             }
         });
     }
