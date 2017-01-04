@@ -24,9 +24,6 @@ package com.pacoworks.rxpaper2;
 import android.content.Context;
 import android.util.Pair;
 
-import com.jakewharton.rxrelay2.PublishRelay;
-import com.jakewharton.rxrelay2.Relay;
-
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -41,6 +38,8 @@ import io.reactivex.functions.Action;
 import io.reactivex.functions.Function;
 import io.reactivex.functions.Predicate;
 import io.reactivex.schedulers.Schedulers;
+import io.reactivex.subjects.PublishSubject;
+import io.reactivex.subjects.Subject;
 
 /**
  * Adapter class with a new interface to perform PaperDB operations.
@@ -55,7 +54,7 @@ public class RxPaperBook {
 
     final Scheduler scheduler;
 
-    private final Relay<Pair<String, ?>> updates = PublishRelay.<Pair<String, ?>>create().toSerialized();
+    final private Subject<Pair<String, ?>> updates = PublishSubject.<Pair<String, ?>>create().toSerialized();
 
     private RxPaperBook(Scheduler scheduler) {
         this.scheduler = scheduler;
@@ -154,7 +153,7 @@ public class RxPaperBook {
             @Override
             public void run() throws Exception {
                 book.write(key, value);
-                updates.accept(Pair.create(key, value));
+                updates.onNext(Pair.create(key, value));
             }
         }).subscribeOn(scheduler);
     }

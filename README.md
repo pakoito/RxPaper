@@ -6,8 +6,6 @@ RxPaper is an [RxJava](https://github.com/ReactiveX/RxJava) wrapper for the cool
 
 Fork of RxPaper for RxJava 2.
 
-It uses RxRelays for observe functionality.
-
 ![Paper icon](https://raw.githubusercontent.com/pilgr/Paper/master/paper_icon.png)
 
 ##Rationale
