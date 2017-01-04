@@ -22,19 +22,6 @@
 
 package com.pacoworks.rxpaper;
 
-import java.util.List;
-
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
-import rx.Completable;
-import rx.Subscriber;
-import rx.observers.TestSubscriber;
-import rx.schedulers.Schedulers;
-
 import android.support.test.rule.ActivityTestRule;
 import android.support.test.runner.AndroidJUnit4;
 
@@ -42,11 +29,26 @@ import com.pacoworks.rxpaper.sample.MainActivity;
 import com.pacoworks.rxpaper.sample.model.ComplexObject;
 import com.pacoworks.rxpaper.sample.model.ImmutableObject;
 
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import java.util.List;
+
+import io.reactivex.Completable;
+import io.reactivex.SingleObserver;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.observers.DefaultObserver;
+import io.reactivex.observers.TestObserver;
+import io.reactivex.schedulers.Schedulers;
+
 @RunWith(AndroidJUnit4.class)
 public class RxPaperBookTest {
+
     @Rule
-    public final ActivityTestRule<MainActivity> activity = new ActivityTestRule<>(
-            MainActivity.class);
+    public final ActivityTestRule<MainActivity> activity = new ActivityTestRule<>(MainActivity.class);
 
     @Before
     public void setUp() throws Exception {
@@ -65,14 +67,14 @@ public class RxPaperBookTest {
 
     @Test
     public void testWrite() throws Exception {
-        RxPaperBook book = RxPaperBook.with("WRITE", Schedulers.immediate());
+        RxPaperBook book = RxPaperBook.with("WRITE", Schedulers.trampoline());
         final String key = "hello";
         final Completable write = book.write(key, ComplexObject.random());
         Assert.assertFalse(book.book.exist(key));
-        final TestSubscriber<Object> testSubscriber = TestSubscriber.create();
+        final TestObserver<Object> testSubscriber = TestObserver.create();
         write.subscribe(testSubscriber);
         testSubscriber.awaitTerminalEvent();
-        testSubscriber.assertCompleted();
+        testSubscriber.assertComplete();
         testSubscriber.assertNoErrors();
         Assert.assertTrue(book.book.exist(key));
     }
@@ -83,27 +85,32 @@ public class RxPaperBookTest {
 
     @Test
     public void testRead() throws Exception {
-        RxPaperBook book = RxPaperBook.with("READ", Schedulers.immediate());
+        RxPaperBook book = RxPaperBook.with("READ", Schedulers.trampoline());
         final String key = "hello";
         final ComplexObject value = ComplexObject.random();
         book.write(key, value).subscribe();
-        final TestSubscriber<ComplexObject> testSubscriber = TestSubscriber.create();
-        book.<ComplexObject> read(key).subscribe(testSubscriber);
+        final TestObserver<ComplexObject> testSubscriber = TestObserver.create();
+        book.<ComplexObject>read(key).subscribe(testSubscriber);
         testSubscriber.awaitTerminalEvent();
-        testSubscriber.assertCompleted();
+        testSubscriber.assertComplete();
         testSubscriber.assertNoErrors();
         testSubscriber.assertValueCount(1);
         testSubscriber.assertValues(value);
         // notFoundSubscriber
-        final TestSubscriber<ComplexObject> notFoundSubscriber = TestSubscriber.create();
+        final TestObserver<ComplexObject> notFoundSubscriber = TestObserver.create();
         String noKey = ":(";
-        book.<ComplexObject> read(noKey).subscribe(notFoundSubscriber);
+        book.<ComplexObject>read(noKey).subscribe(notFoundSubscriber);
         notFoundSubscriber.awaitTerminalEvent();
         notFoundSubscriber.assertError(IllegalArgumentException.class);
         // incorrectTypeSubscriber
-        book.<Integer> read(key).subscribe(new Subscriber<Integer>() {
+        book.<Integer>read(key).subscribe(new SingleObserver<Integer>() {
             @Override
-            public void onCompleted() {
+            public void onSubscribe(Disposable d) {
+
+            }
+
+            @Override
+            public void onSuccess(Integer value) {
                 Assert.fail();
             }
 
@@ -113,36 +120,31 @@ public class RxPaperBookTest {
                     Assert.fail(e.getMessage());
                 }
             }
-
-            @Override
-            public void onNext(Integer integer) {
-                Assert.fail();
-            }
         });
         // immutable objects
         book.write(key, new ImmutableObject(key)).subscribe();
-        final TestSubscriber<ImmutableObject> immutableReadSubscriber = TestSubscriber.create();
-        book.<ImmutableObject> read(key).subscribe(immutableReadSubscriber);
+        final TestObserver<ImmutableObject> immutableReadSubscriber = TestObserver.create();
+        book.<ImmutableObject>read(key).subscribe(immutableReadSubscriber);
         immutableReadSubscriber.awaitTerminalEvent();
         immutableReadSubscriber.assertNoErrors();
-        immutableReadSubscriber.assertCompleted();
-        Assert.assertNotEquals(null, immutableReadSubscriber.getOnNextEvents().get(0).getValue());
+        immutableReadSubscriber.assertComplete();
+        Assert.assertNotEquals(null, immutableReadSubscriber.getEvents().get(0));
     }
 
     @Test
     public void testReadWithDefault() throws Exception {
-        RxPaperBook book = RxPaperBook.with("READ_WITH_DEFAULT", Schedulers.immediate());
+        RxPaperBook book = RxPaperBook.with("READ_WITH_DEFAULT", Schedulers.trampoline());
         final String key = "hello";
         final ComplexObject value = ComplexObject.random();
         book.write(key, value).subscribe();
-        final TestSubscriber<ComplexObject> testSubscriber = TestSubscriber.create();
-        book.<ComplexObject> read(key).subscribe(testSubscriber);
+        final TestObserver<ComplexObject> testSubscriber = TestObserver.create();
+        book.<ComplexObject>read(key).subscribe(testSubscriber);
         testSubscriber.awaitTerminalEvent();
         testSubscriber.assertNoErrors();
         testSubscriber.assertValueCount(1);
         testSubscriber.assertValues(value);
         // notFoundSubscriber
-        final TestSubscriber<ComplexObject> notFoundSubscriber = TestSubscriber.create();
+        final TestObserver<ComplexObject> notFoundSubscriber = TestObserver.create();
         String noKey = ":(";
         final ComplexObject defaultValue = ComplexObject.random();
         book.read(noKey, defaultValue).subscribe(notFoundSubscriber);
@@ -151,9 +153,14 @@ public class RxPaperBookTest {
         notFoundSubscriber.assertValueCount(1);
         notFoundSubscriber.assertValues(defaultValue);
         // incorrectTypeSubscriber
-        book.<Integer> read(key).subscribe(new Subscriber<Integer>() {
+        book.<Integer>read(key).subscribe(new SingleObserver<Integer>() {
             @Override
-            public void onCompleted() {
+            public void onSubscribe(Disposable d) {
+
+            }
+
+            @Override
+            public void onSuccess(Integer value) {
                 Assert.fail("Expected ClassCastException");
             }
 
@@ -163,83 +170,77 @@ public class RxPaperBookTest {
                     Assert.fail(e.getMessage());
                 }
             }
-
-            @Override
-            public void onNext(Integer integer) {
-                Assert.fail("Expected ClassCastException");
-            }
         });
     }
 
     @Test
     public void testDelete() throws Exception {
-        RxPaperBook book = RxPaperBook.with("DELETE", Schedulers.immediate());
+        RxPaperBook book = RxPaperBook.with("DELETE", Schedulers.trampoline());
         final String key = "hello";
-        final TestSubscriber<ComplexObject> errorSubscriber = TestSubscriber.create();
+        final TestObserver<ComplexObject> errorSubscriber = TestObserver.create();
         book.delete(key).subscribe(errorSubscriber);
         errorSubscriber.awaitTerminalEvent();
-        errorSubscriber.assertCompleted();
+        errorSubscriber.assertComplete();
         errorSubscriber.assertNoErrors();
         book.write(key, ComplexObject.random()).subscribe();
-        final TestSubscriber<ComplexObject> testSubscriber = TestSubscriber.create();
-        book.<ComplexObject> delete(key).subscribe(testSubscriber);
+        final TestObserver<ComplexObject> testSubscriber = TestObserver.create();
+        book.<ComplexObject>delete(key).subscribe(testSubscriber);
         testSubscriber.awaitTerminalEvent();
-        testSubscriber.assertCompleted();
+        testSubscriber.assertComplete();
         testSubscriber.assertNoErrors();
         Assert.assertFalse(book.book.exist(key));
     }
 
     @Test
     public void testExists() throws Exception {
-        RxPaperBook book = RxPaperBook.with("EXISTS", Schedulers.immediate());
+        RxPaperBook book = RxPaperBook.with("EXISTS", Schedulers.trampoline());
         final String key = "hello";
         book.write(key, ComplexObject.random()).subscribe();
-        final TestSubscriber<Boolean> foundSubscriber = TestSubscriber.create();
+        final TestObserver<Boolean> foundSubscriber = TestObserver.create();
         book.exists(key).subscribe(foundSubscriber);
         foundSubscriber.awaitTerminalEvent();
         foundSubscriber.assertNoErrors();
         foundSubscriber.assertValueCount(1);
         foundSubscriber.assertValues(true);
         // notFoundSubscriber
-        final TestSubscriber<Boolean> notFoundSubscriber = TestSubscriber.create();
+        final TestObserver<Boolean> notFoundSubscriber = TestObserver.create();
         String noKey = ":(";
         book.exists(noKey).subscribe(notFoundSubscriber);
         notFoundSubscriber.awaitTerminalEvent();
-        notFoundSubscriber.assertCompleted();
+        notFoundSubscriber.assertComplete();
         notFoundSubscriber.assertValueCount(1);
         notFoundSubscriber.assertValues(false);
     }
 
     @Test
     public void testGetAllKeys() throws Exception {
-        RxPaperBook book = RxPaperBook.with("KEYS", Schedulers.immediate());
+        RxPaperBook book = RxPaperBook.with("KEYS", Schedulers.trampoline());
         final String key = "hello";
         final String key2 = "you";
         final ComplexObject value = ComplexObject.random();
         book.write(key, value).subscribe();
         book.write(key2, value).subscribe();
-        final TestSubscriber<List<String>> foundSubscriber = TestSubscriber.create();
+        final TestObserver<List<String>> foundSubscriber = TestObserver.create();
         book.keys().subscribe(foundSubscriber);
         foundSubscriber.awaitTerminalEvent();
         foundSubscriber.assertNoErrors();
         foundSubscriber.assertValueCount(1);
-        final List<List<String>> onNextEvents = foundSubscriber.getOnNextEvents();
-        foundSubscriber.assertValueCount(1);
-        Assert.assertEquals(book.book.getAllKeys(), onNextEvents.get(0));
+
+        foundSubscriber.assertValue(book.book.getAllKeys());
     }
 
     @Test
     public void testDestroy() throws Exception {
-        RxPaperBook book = RxPaperBook.with("DESTROY", Schedulers.immediate());
+        RxPaperBook book = RxPaperBook.with("DESTROY", Schedulers.trampoline());
         final String key = "hello";
         final String key2 = "you";
         final ComplexObject value = ComplexObject.random();
         book.write(key, value).subscribe();
         book.write(key2, value).subscribe();
-        final TestSubscriber<Void> destroySubscriber = TestSubscriber.create();
+        final TestObserver<Void> destroySubscriber = TestObserver.create();
         book.destroy().subscribe(destroySubscriber);
         destroySubscriber.awaitTerminalEvent();
-        destroySubscriber.assertCompleted();
+        destroySubscriber.assertComplete();
         destroySubscriber.assertNoErrors();
         destroySubscriber.assertValueCount(0);
         Assert.assertFalse(book.book.exist(key));
@@ -248,11 +249,11 @@ public class RxPaperBookTest {
 
     @Test
     public void testUpdatesUnchecked() throws Exception {
-        RxPaperBook book = RxPaperBook.with("UPDATES_UNCH", Schedulers.immediate());
+        RxPaperBook book = RxPaperBook.with("UPDATES_UNCH", Schedulers.trampoline());
         final String key = "hello";
         final ComplexObject value = ComplexObject.random();
-        final TestSubscriber<ComplexObject> updatesSubscriber = TestSubscriber.create();
-        book.<ComplexObject> observeUnsafe(key).subscribe(updatesSubscriber);
+        final TestObserver<ComplexObject> updatesSubscriber = TestObserver.create();
+        book.<ComplexObject>observeUnsafe(key).subscribe(updatesSubscriber);
         updatesSubscriber.assertValueCount(0);
         book.write(key, value).subscribe();
         updatesSubscriber.assertValueCount(1);
@@ -263,33 +264,38 @@ public class RxPaperBookTest {
         updatesSubscriber.assertValues(value, newValue);
         // Error value
         final int wrongValue = 3;
-        book.<ComplexObject> observeUnsafe(key).subscribe(new Subscriber<ComplexObject>() {
+
+        //Test observer removes type safety from values, so class cast doesn't throws
+        book.<ComplexObject>observeUnsafe(key).subscribe(new DefaultObserver<ComplexObject>() {
             @Override
-            public void onCompleted() {
-                Assert.fail("Expected ClassCastException");
+            public void onNext(ComplexObject value) {
+                Assert.fail("Expected ClassCastException while writing");
             }
 
             @Override
             public void onError(Throwable e) {
-                if (!(e instanceof ClassCastException)) {
-                    Assert.fail(e.getMessage());
-                }
+                Assert.fail("Expected ClassCastException while writing");
             }
 
             @Override
-            public void onNext(ComplexObject complexObject) {
-                Assert.fail("Expected ClassCastException");
+            public void onComplete() {
+                Assert.fail("Expected ClassCastException while writing");
             }
         });
-        book.write(key, wrongValue).subscribe();
+
+        TestObserver<Object> failOnWriteObserver = new TestObserver<>();
+        book.write(key, wrongValue).subscribe(failOnWriteObserver);
+        failOnWriteObserver.assertError(ClassCastException.class);
+        failOnWriteObserver.assertNoValues();
+        failOnWriteObserver.assertNotComplete();
     }
 
     @Test
     public void testUpdatesChecked() throws Exception {
-        RxPaperBook book = RxPaperBook.with("UPDATES_CH", Schedulers.immediate());
+        RxPaperBook book = RxPaperBook.with("UPDATES_CH", Schedulers.trampoline());
         final String key = "hello";
         final ComplexObject value = ComplexObject.random();
-        final TestSubscriber<ComplexObject> updatesSubscriber = TestSubscriber.create();
+        final TestObserver<ComplexObject> updatesSubscriber = TestObserver.create();
         book.observe(key, ComplexObject.class).subscribe(updatesSubscriber);
         updatesSubscriber.assertValueCount(0);
         book.write(key, value).subscribe();
