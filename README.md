@@ -2,6 +2,8 @@
 
 RxPaper is an [RxJava](https://github.com/ReactiveX/RxJava) wrapper for the cool [Paper](https://github.com/pilgr/Paper) library. It's a clean rewrite of the original [RxPaper](http://www.github.com/cesarferreira/rxpaper) library by [César Ferreira](http://www.github.com/cesarferreira).
 
+For the RxJava 2 version please go to [RxPaper2](https://github.com/pakoito/RxPaper2).
+
 ![Paper icon](https://raw.githubusercontent.com/pilgr/Paper/master/paper_icon.png)
 
 ##Rationale
