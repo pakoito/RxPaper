@@ -1,4 +1,4 @@
-#RxPaper
+# RxPaper
 
 RxPaper is an [RxJava](https://github.com/ReactiveX/RxJava) wrapper for the cool [Paper](https://github.com/pilgr/Paper) library. It's a clean rewrite of the original [RxPaper](http://www.github.com/cesarferreira/rxpaper) library by [César Ferreira](http://www.github.com/cesarferreira).
 
@@ -6,7 +6,7 @@ For the RxJava 2 version please go to [RxPaper2](https://github.com/pakoito/RxPa
 
 ![Paper icon](https://raw.githubusercontent.com/pilgr/Paper/master/paper_icon.png)
 
-##Rationale
+## Rationale
 
 Sometimes you need storage for arbitrary objects on disk, but do not want to store them in a relational database with all the associated problems: writing ORMs, composing the queries, updating scripts. For this purpose NoSQL data storages were created: schemaless document repositories where to store arbitrary data that's not structured.
 
@@ -14,13 +14,13 @@ RxPaper allows access to Paper, which is a NoSQL data storage for Android that a
 
 The Paper/Kryo combination supports some partial data structure changes. Check [Paper's README](https://github.com/pilgr/Paper#handle-data-structure-changes) for more information.
 
-##Updating from 1.X
+## Updating from 1.X
 
 As [PaperDb 2.0](https://github.com/pilgr/Paper/releases/tag/2.0) has updated from Kryo 3 to [Kryo 4](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-4.0.0), the internal representation model has changed. PaperDb deals with these changes internally, so the migration should be transparent. If you find any data compatibility bug, please [create a ticket](https://github.com/pilgr/Paper/issues/new).
 
-##Usage
+## Usage
 
-###Object model handling
+### Object model handling
 
 RxPaper is subject to the same restrictions as the current version of Paper when the library was last updated. As of Paper 1.5, the library can work with empty constructors and all-arg constructors. Some other combinations would need to be tested by the library user.
 
@@ -28,11 +28,11 @@ I personally recommend using immutable objects, as it makes data handling way si
 
 As of Paper 1.5 you can also add your own serializers by calling `Paper.addSerializer()`. Partial structure changes are supported too, as described on [Paper's README](https://github.com/pilgr/Paper#handle-data-structure-changes).
 
-###Threading
+### Threading
 
 All operations are run on the [Scheduler](https://github.com/Froussios/Intro-To-RxJava/blob/master/Part%204%20-%20Concurrency/1.%20Scheduling%20and%20threading.md#schedulers) provided on the constructor, or `Schedulers.io()` by default. When subscribing to them, specially if using the data to be applied to UI; it's recommended to use the operator `observeOn(Scheduler)` to see the changes on any desired thread, i.e. Android's main thread.
 
-###Initialization
+### Initialization
 
 Before the library is usable it requires initializing the underlying Paper library. You only have to initialize RxPaper by calling:
 
@@ -40,7 +40,7 @@ Before the library is usable it requires initializing the underlying Paper libra
 RxPaperBook.init(context);
 ```
 
-###Working on a book
+### Working on a book
 
 RxPaper works on books, and each is a folder on the system. A book is only opened and closed on an operation, but you can check the [Paper](https://github.com/pilgr/Paper) repository for specifics. To make sure no operations are done on the main thread, any operations done on a book can be executed on one [Scheduler](https://github.com/Froussios/Intro-To-RxJava/blob/master/Part%204%20-%20Concurrency/1.%20Scheduling%20and%20threading.md#schedulers) provided in the constructor. To create an instance of RxPaper the library provides several flavours.
 
@@ -68,7 +68,7 @@ RxPaperBook.with("my_book_name", Schedulers.newThread());
 
 Works with a custom book with the provided id/name, and executes operations on any provided scheduler.
 
-###Writing a value
+### Writing a value
 
 Write is a `Completable` operation, a subset of `Observable<T>` without a return value, just success/error. Completables can be converted back to Observables by using the operator `toObservable()`.
 
@@ -96,7 +96,7 @@ write.subscribe(new Completable.CompletableSubscriber() {
 
 Every key written is stored as a file on the system under the folder specified by the book.
 
-###Reading a value
+### Reading a value
 
 Reading is a `Single<T>` operation, a subset of `Observable<T>` that returns just a single element and then completes. Singles can be converted back to Observables by using the operator `toObservable()`. Reading comes in two flavours:
 
@@ -135,7 +135,7 @@ If the subscriber is not of the same type as the value stored expect a `ClassCas
 
 Make sure to read the rules on [how object models are handled](https://github.com/pakoito/RxPaper#object-model-handling) on the section above.
 
-####Observing changes on a key
+#### Observing changes on a key
 
 All write operations are naively forwarded into a `PublishSubject<?>` by default, which makes it possible to observe all changes for a specific key. Observing is an `Observable<T>` operation that never completes.
 
@@ -146,7 +146,7 @@ observe.subscribe(new Subscriber() { /* ... */ });
 
 Observe filters on both the key and the type. Another version of observe that filters only on key and casts any values unsafely is provided under the name `observeUnsafe()`. It's recommended to use it with strict care.
 
-####Exists
+#### Exists
 
 Exists is a `Single<Boolean>` operation that returns true if the key is on the current book, or false otherwise.
 
@@ -155,7 +155,7 @@ Single<Boolean> exists = book.exists(key);
 exists.subscribe(new SingleSubscriber<Boolean>() { /* ... */ });
 ```
 
-####Delete
+#### Delete
 
 Delete is a `Completable` operation. Deletes data stored for a key on the current book. It will still succeed even if the key is not found.
 
@@ -164,7 +164,7 @@ Completable delete = book.delete(key);
 delete.subscribe(new Completable.CompletableSubscriber() { /* ... */ });
 ```
 
-####Keys
+#### Keys
 
 Keys is a `Single<List<String>>` operation that returns a list of all keys stored on the current book.
 
@@ -173,7 +173,7 @@ Single<List<String>> keys = book.keys();
 exists.subscribe(new SingleSubscriber<List<String>>() { /* ... */ });
 ```
 
-####Destroy
+#### Destroy
 
 Destroy is a `Completable` operation that deletes all keys and values on the current book.
 
@@ -182,7 +182,7 @@ Completable destroy = book.destroy();
 destroy.subscribe(new Completable.CompletableSubscriber() { /* ... */ });
 ```
 
-##Distribution
+## Distribution
 
 Add as a dependency to your `build.gradle`
 
@@ -217,7 +217,7 @@ or to your `pom.xml`
     </dependency>
 ```
 
-##License
+## License
 
 Copyright (c) 2016 pakoito & 2015 César Ferreira
 
